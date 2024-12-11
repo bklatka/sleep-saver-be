@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './features/users/users.module';
+import { SleepRecordsModule } from './features/sleep-records/sleep-records.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { UsersModule } from './features/users/users.module';
     }),
     DatabaseModule,
     UsersModule,
+    SleepRecordsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
