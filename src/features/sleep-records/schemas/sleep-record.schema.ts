@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { BaseSchema } from '../../../database/schemas/base.schema';
 
 @Schema({ timestamps: true })
-export class SleepRecord {
+export class SleepRecord extends BaseSchema {
   @Prop({ required: true, type: Date, unique: true })
   date: Date;
 
@@ -27,12 +28,6 @@ export class SleepRecord {
   @Prop({ type: Date })
   timeOutOfBedMorning: Date;
 
-  @Prop({ type: Number, min: 0 })
-  minutesSpentInBed: number;
-
-  @Prop({ type: Number, min: 0 })
-  minutesSleeping: number;
-
   @Prop({ type: Number, min: 0, max: 100 })
   sleepingEfficiency: number;
 
@@ -50,6 +45,12 @@ export class SleepRecord {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
+
+  @Prop()
+  minutesInBed?: number;
+
+  @Prop()
+  minutesSleeping?: number;
 }
 
 export type SleepRecordDocument = SleepRecord & Document;

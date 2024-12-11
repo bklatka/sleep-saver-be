@@ -1,16 +1,21 @@
-import { Schema } from 'mongoose';
+import { Prop, Schema } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-export const BaseSchema = new Schema(
-  {},
-  {
-    timestamps: true,
-    toJSON: {
-      virtuals: true,
-      transform: function (doc, ret) {
-        delete ret._id;
-        delete ret.__v;
-        return ret;
-      },
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: (_, ret) => {
+      delete ret._id;
+      delete ret.__v;
+      return ret;
     },
   },
-); 
+})
+export class BaseSchema extends Document {
+  @Prop()
+  createdAt?: Date;
+
+  @Prop()
+  updatedAt?: Date;
+} 

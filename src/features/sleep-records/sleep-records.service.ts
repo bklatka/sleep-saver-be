@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { SleepRecord, SleepRecordDocument } from './schemas/sleep-record.schema';
 import { CreateSleepRecordDto } from './dto/create-sleep-record.dto';
 import { startOfDay, endOfDay, parseISO } from 'date-fns';
+import { calculateSleepMetrics } from './utils/sleep-calculations';
 
 @Injectable()
 export class SleepRecordsService {
@@ -19,6 +20,7 @@ export class SleepRecordsService {
     const parsedDate = parseISO(createDto.date);
     const startDate = startOfDay(parsedDate);
 
+    const calculations = calculateSleepMetrics(createDto);
     const createdRecord = new this.sleepRecordModel({
       ...createDto,
       userId,
@@ -27,6 +29,7 @@ export class SleepRecordsService {
       timeDecidedToSleep: createDto.timeDecidedToSleep ? new Date(createDto.timeDecidedToSleep) : undefined,
       timeWakeupMorning: createDto.timeWakeupMorning ? new Date(createDto.timeWakeupMorning) : undefined,
       timeOutOfBedMorning: createDto.timeOutOfBedMorning ? new Date(createDto.timeOutOfBedMorning) : undefined,
+      ...calculations
     });
     return createdRecord.save();
   }
@@ -37,6 +40,7 @@ export class SleepRecordsService {
     const startDate = startOfDay(parsedDate);
     const endDate = endOfDay(parsedDate);
 
+    const calculations = calculateSleepMetrics(updateDto);
     const updatedRecord = await this.sleepRecordModel.findOneAndUpdate(
       { 
         userId,
@@ -52,6 +56,7 @@ export class SleepRecordsService {
           timeDecidedToSleep: updateDto.timeDecidedToSleep ? new Date(updateDto.timeDecidedToSleep) : undefined,
           timeWakeupMorning: updateDto.timeWakeupMorning ? new Date(updateDto.timeWakeupMorning) : undefined,
           timeOutOfBedMorning: updateDto.timeOutOfBedMorning ? new Date(updateDto.timeOutOfBedMorning) : undefined,
+          ...calculations
         }
       },
       { new: true }
