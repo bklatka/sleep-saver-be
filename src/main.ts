@@ -8,11 +8,12 @@ async function bootstrap() {
   if (process.env.NODE_ENV === 'development') {
     app.enableCors(); // Allow all origins in development
   } else {
-    app.enableCors({
-      origin: process.env.CORS_ORIGIN,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      credentials: true,
-    });
+    app.enableCors(); // Allow all origins in development
+    // app.enableCors({
+    //   origin: process.env.CORS_ORIGIN,
+    //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    //   credentials: true,
+    // });
   }
 
   await app.listen(process.env.PORT ?? 4000);
