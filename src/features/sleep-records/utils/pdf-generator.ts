@@ -1,6 +1,7 @@
 import * as PDFDocument from 'pdfkit';
 import { SleepRecord } from '../schemas/sleep-record.schema';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import * as path from 'path';
 
 const formatTime = (date: Date | null | undefined): string => {
   if (!date) return '-';
@@ -19,8 +20,21 @@ const calculateAverage = (records: SleepRecord[], getter: (r: SleepRecord) => nu
 };
 
 export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
-  const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' });
+  // Create PDF with custom font
+  const doc = new PDFDocument({ 
+    margin: 50, 
+    size: 'A4', 
+    layout: 'landscape',
+    font: path.join(__dirname, '../../../../assets/fonts/DejaVuSans.ttf')
+  });
   
+  // Register font for different styles
+  doc.registerFont('DejaVuSans', path.join(__dirname, '../../../../assets/fonts/DejaVuSans.ttf'));
+  doc.registerFont('DejaVuSans-Bold', path.join(__dirname, '../../../../assets/fonts/DejaVuSans-Bold.ttf'));
+
+  // Set default font
+  doc.font('DejaVuSans');
+
   const weekStart = startOfWeek(new Date(records[0]?.date || new Date()), { weekStartsOn: 1 });
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
@@ -107,7 +121,7 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
   ];
 
   // Set column widths
-  const labelWidth = 100;
+  const labelWidth = 120;
   const dayWidth = 80;
   
   // Draw table header (days)
