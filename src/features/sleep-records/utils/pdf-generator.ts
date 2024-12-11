@@ -9,15 +9,18 @@ const formatTime = (date: Date | null | undefined): string => {
 
 const formatMinutes = (minutes: number | null | undefined): string => {
   if (!minutes && minutes !== 0) return '-';
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}h ${mins}m (${minutes}m)`;
+  return `${minutes}m`;
+};
+
+const calculateAverage = (records: SleepRecord[], getter: (r: SleepRecord) => number | null | undefined): string => {
+  if (!records.length) return '-';
+  const sum = records.reduce((acc, record) => acc + (getter(record) || 0), 0);
+  return `${Math.round(sum / records.length)}`;
 };
 
 export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
   const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' });
   
-  // Get week range based on the first record's date
   const weekStart = startOfWeek(new Date(records[0]?.date || new Date()), { weekStartsOn: 1 });
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
@@ -29,113 +32,131 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
      .text(`Week: ${format(weekStart, 'MMM dd, yyyy')} - ${format(weekEnd, 'MMM dd, yyyy')}`, { align: 'center' })
      .moveDown();
 
-  // Add summary statistics
-  if (records.length > 0) {
-    const avgEfficiency = records.reduce((sum, record) => sum + (record.sleepingEfficiency || 0), 0) / records.length;
-    const avgTimeInBed = records.reduce((sum, record) => sum + (record.minutesInBed || 0), 0) / records.length;
-    const avgTimeSleeping = records.reduce((sum, record) => sum + (record.minutesSleeping || 0), 0) / records.length;
-    const avgQuality = records.reduce((sum, record) => sum + (record.sleepingQuality || 0), 0) / records.length;
-    const avgMood = records.reduce((sum, record) => sum + (record.mood || 0), 0) / records.length;
-
-    doc.fontSize(14)
-       .text('Weekly Averages', { underline: true })
-       .moveDown()
-       .fontSize(12)
-       .text(`Sleep Efficiency: ${Math.round(avgEfficiency)}%`)
-       .text(`Time in Bed: ${formatMinutes(Math.round(avgTimeInBed))}`)
-       .text(`Time Sleeping: ${formatMinutes(Math.round(avgTimeSleeping))}`)
-       .text(`Sleep Quality: ${avgQuality.toFixed(1)}/5`)
-       .text(`Mood: ${avgMood.toFixed(1)}/5`)
-       .moveDown();
-  }
-
-  // Create table for daily records
-  const columns = [
-    { header: 'Date', width: 80 },
-    { header: 'Bed Time', width: 70 },
-    { header: 'Sleep Time', width: 70 },
-    { header: 'Wake Time', width: 70 },
-    { header: 'Out of Bed', width: 70 },
-    { header: 'Time in Bed', width: 80 },
-    { header: 'Time Sleeping', width: 80 },
-    { header: 'Efficiency', width: 60 },
-    { header: 'Quality', width: 50 },
-    { header: 'Mood', width: 50 },
-    { header: 'Notes', width: 150 }
+  // Define row headers and their corresponding data getters
+  const rows = [
+    { 
+      label: 'Bed Time', 
+      getValue: (r: SleepRecord) => formatTime(r.timeGoToBed),
+      getAverage: () => '-' // No average for times
+    },
+    { 
+      label: 'Sleep Time', 
+      getValue: (r: SleepRecord) => formatTime(r.timeDecidedToSleep),
+      getAverage: () => '-'
+    },
+    { 
+      label: 'Wake Time', 
+      getValue: (r: SleepRecord) => formatTime(r.timeWakeupMorning),
+      getAverage: () => '-'
+    },
+    { 
+      label: 'Out of Bed', 
+      getValue: (r: SleepRecord) => formatTime(r.timeOutOfBedMorning),
+      getAverage: () => '-'
+    },
+    { 
+      label: 'Time in Bed', 
+      getValue: (r: SleepRecord) => formatMinutes(r.minutesInBed),
+      getAverage: () => `${calculateAverage(records, r => r.minutesInBed)}m`
+    },
+    { 
+      label: 'Time Sleeping', 
+      getValue: (r: SleepRecord) => formatMinutes(r.minutesSleeping),
+      getAverage: () => `${calculateAverage(records, r => r.minutesSleeping)}m`
+    },
+    { 
+      label: 'Minutes to Sleep', 
+      getValue: (r: SleepRecord) => `${r.minutesNeededToSleep || 0}m`,
+      getAverage: () => `${calculateAverage(records, r => r.minutesNeededToSleep)}m`
+    },
+    { 
+      label: 'Times Woken Up', 
+      getValue: (r: SleepRecord) => `${r.timesWokenUp || 0}`,
+      getAverage: () => calculateAverage(records, r => r.timesWokenUp)
+    },
+    { 
+      label: 'Wakeup Duration', 
+      getValue: (r: SleepRecord) => `${r.totalWokeupDuration || 0}m`,
+      getAverage: () => `${calculateAverage(records, r => r.totalWokeupDuration)}m`
+    },
+    { 
+      label: 'Minutes Sleepy', 
+      getValue: (r: SleepRecord) => `${r.minutesFeelingSleepy || 0}m`,
+      getAverage: () => `${calculateAverage(records, r => r.minutesFeelingSleepy)}m`
+    },
+    { 
+      label: 'Sleep Efficiency', 
+      getValue: (r: SleepRecord) => `${r.sleepingEfficiency || 0}%`,
+      getAverage: () => `${calculateAverage(records, r => r.sleepingEfficiency)}%`
+    },
+    { 
+      label: 'Sleep Quality', 
+      getValue: (r: SleepRecord) => `${r.sleepingQuality || 0}/5`,
+      getAverage: () => `${calculateAverage(records, r => r.sleepingQuality)}/5`
+    },
+    { 
+      label: 'Mood', 
+      getValue: (r: SleepRecord) => `${r.mood || 0}/5`,
+      getAverage: () => `${calculateAverage(records, r => r.mood)}/5`
+    },
+    { 
+      label: 'Notes', 
+      getValue: (r: SleepRecord) => r.comment || '-',
+      getAverage: () => '-'
+    }
   ];
 
-  // Draw table header
-  let xOffset = 50;
-  let yOffset = doc.y;
+  // Set column widths
+  const labelWidth = 100;
+  const dayWidth = 80;
   
-  columns.forEach(column => {
-    doc.text(column.header, xOffset, yOffset, { width: column.width });
-    xOffset += column.width;
-  });
-
-  // Draw records for each day of the week
-  yOffset += 20;
+  // Draw table header (days)
+  const headerY = doc.y;
+  let xOffset = labelWidth + 50;
   let currentDate = weekStart;
-
+  
+  // Draw column headers (days)
   while (currentDate <= weekEnd) {
-    if (yOffset > 500) { // Check if we need a new page
+    doc.text(format(currentDate, 'dd/MM'), xOffset, headerY, { width: dayWidth, align: 'center' });
+    xOffset += dayWidth;
+    currentDate = addDays(currentDate, 1);
+  }
+
+  // Draw Average column header
+  doc.text('Average', xOffset, headerY, { width: dayWidth, align: 'center' });
+
+  // Draw rows
+  let yOffset = headerY + 20;
+  rows.forEach(row => {
+    if (yOffset > 500) {
       doc.addPage({ margin: 50, size: 'A4', layout: 'landscape' });
       yOffset = 50;
     }
 
-    const record = records.find(r => 
-      format(new Date(r.date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
-    );
-
+    // Draw row label
     xOffset = 50;
-    
-    // Date
-    doc.text(format(currentDate, 'EEE, MMM dd'), xOffset, yOffset, { width: 80 });
-    xOffset += 80;
+    doc.text(row.label, xOffset, yOffset, { width: labelWidth });
+    xOffset += labelWidth;
 
-    if (record) {
-      // Times
-      doc.text(formatTime(record.timeGoToBed), xOffset, yOffset, { width: 70 });
-      xOffset += 70;
+    // Draw values for each day
+    currentDate = weekStart;
+    while (currentDate <= weekEnd) {
+      const record = records.find(r => 
+        format(new Date(r.date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
+      );
       
-      doc.text(formatTime(record.timeDecidedToSleep), xOffset, yOffset, { width: 70 });
-      xOffset += 70;
+      const value = record ? row.getValue(record) : '-';
+      doc.text(value, xOffset, yOffset, { width: dayWidth, align: 'center' });
       
-      doc.text(formatTime(record.timeWakeupMorning), xOffset, yOffset, { width: 70 });
-      xOffset += 70;
-      
-      doc.text(formatTime(record.timeOutOfBedMorning), xOffset, yOffset, { width: 70 });
-      xOffset += 70;
-
-      // Durations
-      doc.text(formatMinutes(record.minutesInBed), xOffset, yOffset, { width: 80 });
-      xOffset += 80;
-      
-      doc.text(formatMinutes(record.minutesSleeping), xOffset, yOffset, { width: 80 });
-      xOffset += 80;
-
-      // Metrics
-      doc.text(`${record.sleepingEfficiency || 0}%`, xOffset, yOffset, { width: 60 });
-      xOffset += 60;
-      
-      doc.text(`${record.sleepingQuality || 0}/5`, xOffset, yOffset, { width: 50 });
-      xOffset += 50;
-      
-      doc.text(`${record.mood || 0}/5`, xOffset, yOffset, { width: 50 });
-      xOffset += 50;
-      
-      doc.text(record.comment || '-', xOffset, yOffset, { width: 150 });
-    } else {
-      // Fill with dashes if no record exists
-      while (xOffset < 800) {
-        doc.text('-', xOffset, yOffset, { width: 70 });
-        xOffset += 70;
-      }
+      xOffset += dayWidth;
+      currentDate = addDays(currentDate, 1);
     }
 
-    currentDate = addDays(currentDate, 1);
+    // Draw average value
+    doc.text(row.getAverage(), xOffset, yOffset, { width: dayWidth, align: 'center' });
+
     yOffset += 20;
-  }
+  });
 
   doc.end();
   return doc;
