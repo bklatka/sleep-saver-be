@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Configure CORS based on environment
   if (process.env.NODE_ENV === 'development') {
     app.enableCors(); // Allow all origins in development

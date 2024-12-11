@@ -2,10 +2,11 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
+export type UserWithoutPassword = Omit<User, 'password'> & {
+  _id: Types.ObjectId;
+};
 
-export type UserWithoutPassword = Omit<User, 'password'> & {   _id: Types.ObjectId; };
-
-@Schema({ 
+@Schema({
   timestamps: true,
   toJSON: {
     transform: (_, ret) => {
@@ -32,7 +33,7 @@ export type UserDocument = User & Document;
 export const UserSchema = SchemaFactory.createForClass(User);
 
 // Add middleware to hash password before saving
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
@@ -44,4 +45,4 @@ UserSchema.pre('save', async function(next) {
   } catch (error) {
     next(error);
   }
-}); 
+});

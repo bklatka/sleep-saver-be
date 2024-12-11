@@ -18,4 +18,4 @@ export class BaseSchema extends Document {
 
   @Prop()
   updatedAt?: Date;
-} 
+}

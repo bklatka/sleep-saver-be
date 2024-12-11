@@ -1,4 +1,11 @@
-import { IsDateString, IsOptional, IsNumber, IsString, Min, Max } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsNumber,
+  IsString,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class CreateSleepRecordDto {
   @IsDateString()
@@ -71,4 +78,4 @@ export class CreateSleepRecordDto {
   @IsOptional()
   @IsString()
   comment?: string;
-} 
+}

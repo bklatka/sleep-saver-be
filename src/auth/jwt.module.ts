@@ -12,4 +12,4 @@ import { JwtService } from './jwt.service';
   providers: [JwtService],
   exports: [JwtService],
 })
-export class JwtModule {} 
+export class JwtModule {}

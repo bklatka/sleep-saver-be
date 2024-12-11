@@ -1,9 +1,9 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
+import {
+  Controller,
+  Get,
+  Post,
   Put,
-  Body, 
+  Body,
   Param,
   UseGuards,
   Request,
@@ -40,7 +40,7 @@ export class SleepRecordsController {
   async update(
     @Param('date') date: string,
     @Body() updateDto: Partial<CreateSleepRecordDto>,
-    @Request() req
+    @Request() req,
   ) {
     const userId = new Types.ObjectId(req.user.sub);
     return this.sleepRecordsService.update(date, updateDto, userId);
@@ -48,7 +48,10 @@ export class SleepRecordsController {
 
   @Get(':date')
   @ApiOperation({ summary: 'Get journal entry by date' })
-  @ApiResponse({ status: 200, description: 'Returns the journal entry for the specified date' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the journal entry for the specified date',
+  })
   @ApiResponse({ status: 404, description: 'Journal entry not found' })
   async findByDate(@Param('date') date: string, @Request() req) {
     const userId = new Types.ObjectId(req.user.sub);
@@ -69,7 +72,7 @@ export class SleepRecordsController {
     const records = await this.sleepRecordsService.findByDateRange(
       weekStart,
       weekEnd,
-      userId
+      userId,
     );
 
     const doc = generateWeeklyPDF(records);
@@ -77,9 +80,9 @@ export class SleepRecordsController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=weekly-sleep-report-${format(targetDate, 'yyyy-MM-dd')}.pdf`
+      `attachment; filename=weekly-sleep-report-${format(targetDate, 'yyyy-MM-dd')}.pdf`,
     );
 
     doc.pipe(res);
   }
-} 
+}

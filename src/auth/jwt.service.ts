@@ -7,7 +7,7 @@ export class JwtService {
   constructor(private jwtService: NestJwtService) {}
 
   generateToken(user: UserWithoutPassword): string {
-    return this.jwtService.sign({ 
+    return this.jwtService.sign({
       sub: user._id,
       email: user.email,
     });
@@ -16,4 +16,4 @@ export class JwtService {
   verifyToken(token: string) {
     return this.jwtService.verify(token);
   }
-} 
+}

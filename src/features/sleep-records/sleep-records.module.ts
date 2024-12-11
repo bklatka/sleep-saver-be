@@ -7,10 +7,12 @@ import { JwtModule } from '../../auth/jwt.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: SleepRecord.name, schema: SleepRecordSchema }]),
+    MongooseModule.forFeature([
+      { name: SleepRecord.name, schema: SleepRecordSchema },
+    ]),
     JwtModule,
   ],
   providers: [SleepRecordsService],
   controllers: [SleepRecordsController],
 })
-export class SleepRecordsModule {} 
+export class SleepRecordsModule {}

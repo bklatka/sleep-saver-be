@@ -1,7 +1,7 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
+import {
+  Controller,
+  Post,
+  Body,
   UnauthorizedException,
   ConflictException,
   HttpCode,
@@ -61,9 +61,9 @@ export class UsersController {
     const { password, ...userWithoutPassword } = user.toObject();
     const token = this.jwtService.generateToken(userWithoutPassword);
 
-    return { 
+    return {
       user: userWithoutPassword as UserWithoutPassword,
       token,
     };
   }
-} 
+}

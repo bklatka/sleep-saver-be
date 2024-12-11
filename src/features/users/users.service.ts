@@ -7,9 +7,7 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   private async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(10);
@@ -22,18 +20,21 @@ export class UsersService {
 
   async create(registerDto: RegisterUserDto): Promise<UserWithoutPassword> {
     const hashedPassword = await this.hashPassword(registerDto.password);
-    
+
     const createdUser = new this.userModel({
       ...registerDto,
       password: hashedPassword,
     });
-    
+
     const savedUser = await createdUser.save();
     const { password, ...result } = savedUser.toObject();
     return result as UserWithoutPassword;
   }
 
-  async verifyPassword(plainTextPassword: string, hashedPassword: string): Promise<boolean> {
+  async verifyPassword(
+    plainTextPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(plainTextPassword, hashedPassword);
   }
-} 
+}

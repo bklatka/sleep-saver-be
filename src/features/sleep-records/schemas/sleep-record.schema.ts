@@ -57,4 +57,4 @@ export type SleepRecordDocument = SleepRecord & Document;
 export const SleepRecordSchema = SchemaFactory.createForClass(SleepRecord);
 
 // Add index for faster queries by date and userId
-SleepRecordSchema.index({ date: 1, userId: 1 }, { unique: true }); 
+SleepRecordSchema.index({ date: 1, userId: 1 }, { unique: true });

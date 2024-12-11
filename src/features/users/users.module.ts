@@ -14,4 +14,4 @@ import { JwtModule } from '../../auth/jwt.module';
   controllers: [UsersController],
   exports: [UsersService],
 })
-export class UsersModule {} 
+export class UsersModule {}
