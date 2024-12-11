@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Res,
+  Query,
 } from '@nestjs/common';
 import { SleepRecordsService } from './sleep-records.service';
 import { CreateSleepRecordDto } from './dto/create-sleep-record.dto';
@@ -16,7 +17,7 @@ import { Types } from 'mongoose';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { generateWeeklyPDF } from './utils/pdf-generator';
-import { startOfWeek, endOfWeek, format } from 'date-fns';
+import { startOfWeek, endOfWeek, format, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 @ApiTags('sleep-records')
 @Controller('journal')
@@ -24,19 +25,19 @@ import { startOfWeek, endOfWeek, format } from 'date-fns';
 export class SleepRecordsController {
   constructor(private readonly sleepRecordsService: SleepRecordsService) {}
 
-  @Get()
+  @Get('records')
   async findAll(@Request() req) {
     const userId = new Types.ObjectId(req.user.sub);
     return this.sleepRecordsService.findAllByUserId(userId);
   }
 
-  @Post()
+  @Post('record')
   async create(@Body() createDto: CreateSleepRecordDto, @Request() req) {
     const userId = new Types.ObjectId(req.user.sub);
     return this.sleepRecordsService.create(createDto, userId);
   }
 
-  @Put(':date')
+  @Put('record/:date')
   async update(
     @Param('date') date: string,
     @Body() updateDto: Partial<CreateSleepRecordDto>,
@@ -46,7 +47,7 @@ export class SleepRecordsController {
     return this.sleepRecordsService.update(date, updateDto, userId);
   }
 
-  @Get(':date')
+  @Get('record/:date')
   @ApiOperation({ summary: 'Get journal entry by date' })
   @ApiResponse({
     status: 200,
@@ -58,29 +59,29 @@ export class SleepRecordsController {
     return this.sleepRecordsService.findByDate(date, userId);
   }
 
-  @Get('weekly-report/:date')
-  async getWeeklyReport(
-    @Param('date') date: string,
+  @Get('report')
+  async getReport(
+    @Query('from') fromDate: string,
+    @Query('to') toDate: string,
     @Res() res: Response,
     @Request() req,
   ) {
     const userId = new Types.ObjectId(req.user.sub);
-    const targetDate = new Date(date);
-    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
+    const from = startOfDay(parseISO(fromDate));
+    const to = endOfDay(parseISO(toDate));
 
     const records = await this.sleepRecordsService.findByDateRange(
-      weekStart,
-      weekEnd,
+      from,
+      to,
       userId,
     );
 
-    const doc = generateWeeklyPDF(records);
+    const doc = generateWeeklyPDF(records, from, to);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=weekly-sleep-report-${format(targetDate, 'yyyy-MM-dd')}.pdf`,
+      `attachment; filename=sleep-report-${format(from, 'yyyy-MM-dd')}-${format(to, 'yyyy-MM-dd')}.pdf`,
     );
 
     doc.pipe(res);

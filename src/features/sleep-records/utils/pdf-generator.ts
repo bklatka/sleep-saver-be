@@ -1,6 +1,6 @@
 import * as PDFDocument from 'pdfkit';
 import { SleepRecord } from '../schemas/sleep-record.schema';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
 import * as path from 'path';
 
 const formatTime = (date: Date | null | undefined): string => {
@@ -22,8 +22,11 @@ const calculateAverage = (
   return `${Math.round(sum / records.length)}`;
 };
 
-export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
-  // Create PDF with custom font
+export const generateWeeklyPDF = (
+  records: SleepRecord[],
+  startDate: Date,
+  endDate: Date,
+): PDFDocument => {
   const doc = new PDFDocument({
     margin: 50,
     size: 'A4',
@@ -44,19 +47,14 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
   // Set default font
   doc.font('DejaVuSans');
 
-  const weekStart = startOfWeek(new Date(records[0]?.date || new Date()), {
-    weekStartsOn: 1,
-  });
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-
   // Add title and date range
   doc
     .fontSize(20)
-    .text('Tygodniowe podsumowanie snu', { align: 'center' })
+    .text('Podsumowanie snu', { align: 'center' })
     .moveDown()
     .fontSize(12)
     .text(
-      `Tydzień: ${format(weekStart, 'MMM dd, yyyy')} - ${format(weekEnd, 'MMM dd, yyyy')}`,
+      `Okres: ${format(startDate, 'dd MMM yyyy')} - ${format(endDate, 'dd MMM yyyy')}`,
       { align: 'center' },
     )
     .moveDown();
@@ -145,14 +143,21 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
   // Set column widths
   const labelWidth = 140;
   const dayWidth = 60;
+  const daysInRange = differenceInDays(endDate, startDate) + 1;
+  const totalWidth = labelWidth + 50 + (dayWidth * (daysInRange + 1)); // +1 for average column
+
+  // Check if we need to switch to portrait for small ranges
+  if (daysInRange <= 3) {
+    doc.addPage({ size: 'A4', margin: 50 });
+  }
 
   // Draw table header (days)
   const headerY = doc.y;
   let xOffset = labelWidth + 50;
-  let currentDate = weekStart;
+  let currentDate = startDate;
 
   // Draw column headers (days)
-  while (currentDate <= weekEnd) {
+  while (currentDate <= endDate) {
     doc.text(format(currentDate, 'dd/MM'), xOffset, headerY, {
       width: dayWidth,
       align: 'center',
@@ -167,7 +172,7 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
   // Draw horizontal line under headers
   doc
     .moveTo(50, headerY + 15)
-    .lineTo(xOffset + dayWidth, headerY + 15)
+    .lineTo(totalWidth, headerY + 15)
     .stroke();
 
   // Draw vertical line separating labels from values
@@ -179,8 +184,8 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
   // Draw rows
   let yOffset = headerY + 20;
   rows.forEach((row) => {
-    if (yOffset > 500) {
-      doc.addPage({ margin: 50, size: 'A4', layout: 'landscape' });
+    if (yOffset > (doc.page.height - 50)) {
+      doc.addPage({ margin: 50, size: doc.page.size, layout: doc.page.layout });
       yOffset = 50;
     }
 
@@ -190,8 +195,8 @@ export const generateWeeklyPDF = (records: SleepRecord[]): PDFDocument => {
     xOffset += labelWidth;
 
     // Draw values for each day
-    currentDate = weekStart;
-    while (currentDate <= weekEnd) {
+    currentDate = startDate;
+    while (currentDate <= endDate) {
       const record = records.find(
         (r) =>
           format(new Date(r.date), 'yyyy-MM-dd') ===

@@ -133,8 +133,8 @@ export class SleepRecordsService {
       .find({
         userId,
         date: {
-          $gte: startDate,
-          $lte: endDate,
+          $gte: startOfDay(startDate),
+          $lte: endOfDay(endDate),
         },
       })
       .sort({ date: 1 })
