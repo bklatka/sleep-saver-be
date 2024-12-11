@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { SleepRecord, SleepRecordDocument } from './schemas/sleep-record.schema';
 import { CreateSleepRecordDto } from './dto/create-sleep-record.dto';
+import { startOfDay, endOfDay, parseISO } from 'date-fns';
 
 @Injectable()
 export class SleepRecordsService {
@@ -15,10 +16,13 @@ export class SleepRecordsService {
   }
 
   async create(createDto: CreateSleepRecordDto, userId: Types.ObjectId): Promise<SleepRecord> {
+    const parsedDate = parseISO(createDto.date);
+    const startDate = startOfDay(parsedDate);
+
     const createdRecord = new this.sleepRecordModel({
       ...createDto,
       userId,
-      date: new Date(createDto.date),
+      date: startDate,
       timeGoToBed: createDto.timeGoToBed ? new Date(createDto.timeGoToBed) : undefined,
       timeDecidedToSleep: createDto.timeDecidedToSleep ? new Date(createDto.timeDecidedToSleep) : undefined,
       timeWakeupMorning: createDto.timeWakeupMorning ? new Date(createDto.timeWakeupMorning) : undefined,
@@ -28,18 +32,17 @@ export class SleepRecordsService {
   }
 
   async update(date: string, updateDto: Partial<CreateSleepRecordDto>, userId: Types.ObjectId): Promise<SleepRecord> {
-    const startOfDay = new Date(date);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    const parsedDate = parseISO(date);
+    console.log('Parsed date:', parsedDate, date);
+    const startDate = startOfDay(parsedDate);
+    const endDate = endOfDay(parsedDate);
 
     const updatedRecord = await this.sleepRecordModel.findOneAndUpdate(
       { 
         userId,
         date: {
-          $gte: startOfDay,
-          $lte: endOfDay
+          $gte: startDate,
+          $lte: endDate
         }
       },
       {
@@ -59,5 +62,31 @@ export class SleepRecordsService {
     }
 
     return updatedRecord;
+  }
+
+  async findByDate(date: string, userId: Types.ObjectId) {
+    // Parse the date and set it to UTC to match the stored dates
+    const parsedDate = parseISO(date);
+    const startDate = startOfDay(parsedDate);
+    const endDate = endOfDay(parsedDate);
+
+    console.log('Looking for records between:', startDate, 'and', endDate);
+    console.log('For user:', userId);
+
+    const record = await this.sleepRecordModel.findOne({
+      userId: new Types.ObjectId(userId),
+      date: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    }).exec();
+
+    console.log('Found record:', record);
+
+    if (!record) {
+      throw new NotFoundException(`No journal entry found for date ${date}`);
+    }
+
+    return record;
   }
 } 
