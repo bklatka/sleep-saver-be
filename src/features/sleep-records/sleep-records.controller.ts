@@ -7,12 +7,16 @@ import {
   Param,
   UseGuards,
   Request,
+  Res,
 } from '@nestjs/common';
 import { SleepRecordsService } from './sleep-records.service';
 import { CreateSleepRecordDto } from './dto/create-sleep-record.dto';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Types } from 'mongoose';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Response } from 'express';
+import { generateWeeklyPDF } from './utils/pdf-generator';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 
 @ApiTags('sleep-records')
 @Controller('journal')
@@ -49,5 +53,33 @@ export class SleepRecordsController {
   async findByDate(@Param('date') date: string, @Request() req) {
     const userId = new Types.ObjectId(req.user.sub);
     return this.sleepRecordsService.findByDate(date, userId);
+  }
+
+  @Get('weekly-report/:date')
+  async getWeeklyReport(
+    @Param('date') date: string,
+    @Res() res: Response,
+    @Request() req,
+  ) {
+    const userId = new Types.ObjectId(req.user.sub);
+    const targetDate = new Date(date);
+    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
+
+    const records = await this.sleepRecordsService.findByDateRange(
+      weekStart,
+      weekEnd,
+      userId
+    );
+
+    const doc = generateWeeklyPDF(records);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=weekly-sleep-report-${format(targetDate, 'yyyy-MM-dd')}.pdf`
+    );
+
+    doc.pipe(res);
   }
 } 

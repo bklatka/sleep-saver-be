@@ -94,4 +94,21 @@ export class SleepRecordsService {
 
     return record;
   }
+
+  async findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    userId: Types.ObjectId
+  ): Promise<SleepRecord[]> {
+    return this.sleepRecordModel
+      .find({
+        userId,
+        date: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      })
+      .sort({ date: 1 })
+      .exec();
+  }
 } 
