@@ -27,6 +27,7 @@ export const generateWeeklyPDF = (
   startDate: Date,
   endDate: Date,
 ): PDFDocument => {
+
   const doc = new PDFDocument({
     margin: 50,
     size: 'A4',
