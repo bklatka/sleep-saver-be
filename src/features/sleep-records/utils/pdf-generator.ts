@@ -134,11 +134,6 @@ export const generateWeeklyPDF = (
       getValue: (r: SleepRecord) => `${r.mood || 0}/5`,
       getAverage: () => `${calculateAverage(records, (r) => r.mood)}/5`,
     },
-    {
-      label: 'Uwagi',
-      getValue: (r: SleepRecord) => r.comment || '-',
-      getAverage: () => '-',
-    },
   ];
 
   // Set column widths
@@ -218,6 +213,15 @@ export const generateWeeklyPDF = (
     });
 
     yOffset += 20;
+  });
+
+  // Print comments below the table
+  currentDate = startDate;
+  records.forEach((record) => {
+    if (record.comment) {
+      doc.text(`Dzień ${format(new Date(record.date), 'dd.MM')}: ${record.comment}`, 50, yOffset + 20, { width: totalWidth });
+      yOffset += 20;
+    }
   });
 
   doc.end();

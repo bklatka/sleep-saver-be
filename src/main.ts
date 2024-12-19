@@ -16,6 +16,11 @@ async function bootstrap() {
     // });
   }
 
+  app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-cache');
+    next();
+  });
+
   await app.listen(process.env.PORT ?? 4000);
   console.log(`Server is running on port ${process.env.PORT ?? 4000}`);
 }
